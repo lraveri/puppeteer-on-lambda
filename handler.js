@@ -6,10 +6,9 @@ const puppeteer = require('puppeteer-core');
 module.exports.generatePDF = async (event) => {
   const { url } = JSON.parse(event.body);
   const bucketName = process.env.PDF_BUCKET;
-  const ttlSeconds = 60 * 60; // TTL di 1 ora (3600 secondi)
+  const ttlSeconds = 60 * 60; // 1 hour
 
   try {
-    // Lancia Puppeteer per la generazione del PDF
     const browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -20,28 +19,24 @@ module.exports.generatePDF = async (event) => {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle0' });
 
-    // Genera il PDF
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
 
-    // Nome univoco per il file PDF
     const timestamp = Date.now();
     const pdfKey = `pdfs/${timestamp}.pdf`;
 
-    // Carica il PDF su S3 con un TTL
     await S3.putObject({
       Bucket: bucketName,
       Key: pdfKey,
       Body: pdfBuffer,
       ContentType: 'application/pdf',
       ACL: 'private',
-      Expires: new Date(Date.now() + ttlSeconds * 1000), // Imposta la data di scadenza
+      Expires: new Date(Date.now() + ttlSeconds * 1000),
     }).promise();
 
-    // Genera un URL firmato (pre-signed URL) per scaricare il PDF
     const pdfUrl = S3.getSignedUrl('getObject', {
       Bucket: bucketName,
       Key: pdfKey,
-      Expires: ttlSeconds, // L'URL è valido per il tempo specificato (1 ora)
+      Expires: ttlSeconds,
     });
 
     return {
