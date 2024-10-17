@@ -44,11 +44,11 @@ module.exports.generatePDF = async (event) => {
       body: JSON.stringify({ pdfUrl }),
     };
   } catch (error) {
-    console.error('Errore nella generazione del PDF:', error);
+    console.error('Error generating the PDF:', error);
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Errore durante la generazione del PDF', error: error.message }),
+      body: JSON.stringify({ message: 'Error generating the PDF', error: error.message }),
     };
   }
 };
