@@ -24,6 +24,7 @@ functions:
   generatePDF:
     timeout: 30
     handler: handler.generatePDF
+    memorySize: 3008
     events:
       - http:
           path: pdf
