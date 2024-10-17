@@ -1,69 +1,73 @@
-<!--
-title: 'AWS Simple HTTP Endpoint example in NodeJS'
-description: 'This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.'
-layout: Doc
-framework: v4
-platform: AWS
-language: nodeJS
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, Inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# Puppeteer on Lambda
 
-# Serverless Framework Node HTTP API on AWS
+This repository demonstrates how to run Puppeteer on AWS Lambda. In 2024, I successfully managed to run Puppeteer on Lambda using the Node.js 18.x runtime with the following libraries and versions:
 
-This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.
+- **@sparticuz/chromium**: ^119.0.2
+- **aws-sdk**: ^2.1691.0
+- **puppeteer-core**: ^21.11.0
 
-This template does not include any kind of persistence (database). For more advanced examples, check out the [serverless/examples repository](https://github.com/serverless/examples/) which includes Typescript, Mongo, DynamoDB and other examples.
+## Use Case: PDF Generation
 
-## Usage
+This project provides an example of how to generate a PDF from a URL using AWS services. When an API request is made, an AWS Lambda function is triggered, which runs Puppeteer to render the specified URL into a PDF. The resulting PDF is stored in an **S3 bucket**, and the function returns a **signed URL** for temporary access to download the file.
 
-### Deployment
+### AWS Services Involved:
+- **Lambda**: Executes the code for rendering and generating the PDF.
+- **S3**: Used for storing the generated PDF file.
+- **API Gateway**: Exposes the Lambda function as a RESTful API.
+- **IAM Roles**: Manage permissions for Lambda to interact with S3 and other services.
 
-In order to deploy the example, you need to run the following command:
+### Example Workflow:
+1. A POST request is sent to the API Gateway endpoint, containing the URL to be converted.
+2. The Lambda function is invoked, Puppeteer launches a headless Chromium instance to render the page and generate the PDF.
+3. The PDF is uploaded to a predefined S3 bucket, and a signed URL is returned for accessing the file. A lifecycle policy is set on the S3 bucket to automatically delete old files, preventing unnecessary storage costs.
 
+### Advantages of a serverless approach:
+- **Automatic scaling**: Lambda functions automatically scale based on the workload, handling thousands of requests without manual intervention.
+- **Cost efficiency**: With a pay-per-use model, you only pay for the compute time you consume, which is ideal for unpredictable or low-volume traffic.
+- **Reduced operational overhead**: No need to manage or provision servers, allowing you to focus on writing code instead of handling infrastructure.
+- **Built-in fault tolerance**: AWS Lambda automatically handles the replication and availability of your functions across multiple availability zones.
+- **Integration with other AWS services**: Lambda seamlessly integrates with services like S3, API Gateway, DynamoDB, SQS and others, making it easy to build fully managed, scalable applications.
+
+---
+
+## How to Run
+
+To run the project locally and deploy it to AWS, follow these steps:
+
+### Prerequisites:
+- Install [Node.js](https://nodejs.org/) 18.x
+- Install [Serverless Framework](https://www.serverless.com/)
+
+### Steps:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repository/puppeteer-on-lambda.git
+   cd puppeteer-on-lambda
+
+2. Set the AWS credentials:
+
+```bash
+aws configure
 ```
+
+3. Install the dependencies:
+```bash
+npm install
+```
+
+4. Deploy the service to AWS using Serverless:
+
+```bash
 serverless deploy
 ```
 
-After running deploy, you should see output similar to:
+5. Test the deployed service using curl:
 
-```
-Deploying "serverless-http-api" to stage "dev" (us-east-1)
-
-✔ Service deployed to stack serverless-http-api-dev (91s)
-
-endpoint: GET - https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/
-functions:
-  hello: serverless-http-api-dev-hello (1.6 kB)
+```bash
+curl -X POST https://your-api-id.execute-api.your-region.amazonaws.com/dev/pdf \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
 ```
 
-_Note_: In current form, after deployment, your API is public and can be invoked by anyone. For production deployments, you might want to configure an authorizer. For details on how to do that, refer to [HTTP API (API Gateway V2) event docs](https://www.serverless.com/framework/docs/providers/aws/events/http-api).
-
-### Invocation
-
-After successful deployment, you can call the created application via HTTP:
-
-```
-curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/
-```
-
-Which should result in response similar to:
-
-```json
-{ "message": "Go Serverless v4! Your function executed successfully!" }
-```
-
-### Local development
-
-The easiest way to develop and test your function is to use the `dev` command:
-
-```
-serverless dev
-```
-
-This will start a local emulator of AWS Lambda and tunnel your requests to and from AWS Lambda, allowing you to interact with your function as if it were running in the cloud.
-
-Now you can invoke the function as before, but this time the function will be executed locally. Now you can develop your function locally, invoke it, and see the results immediately without having to re-deploy.
-
-When you are done developing, don't forget to run `serverless deploy` to deploy the function to the cloud.
+The response will include a signed URL to download the generated PDF.
